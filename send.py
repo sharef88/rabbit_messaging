@@ -4,9 +4,9 @@ import pika
 __author__ = "sharef88"
 
 MESSAGE_HOST = pika.ConnectionParameters(
-    '192.168.1.155',
-    5672,
-    '/',
+    host='192.168.1.155',
+    port=5672,
+    virtual_host='/',
     connection_attempts=1,
     credentials=pika.PlainCredentials(
         "guest",
@@ -28,8 +28,8 @@ class Messaging:
             sys.stderr.write('ERROR: %sn' % str(err))
             print("Could not connect")
 
+        self.queue = queue
         self.channel = self.connection.channel()
-
         self.channel.queue_declare(queue=queue)
 
     def send_message(self, message):
@@ -41,6 +41,26 @@ class Messaging:
             routing_key='hello',
             body=message
         )
+    def receive_message(self, callback):
+        '''blockIO and wait for recieption of messages on queue'''
+        def print_message(channel, method, properties, body):
+            '''default case'''
+            print("fetched '%s' from %s" % (body.decode('utf-8'), self.queue))
+        if callback == "print":
+            callback = print_message
+
+        self.channel.basic_consume(
+            consumer_callback=callback,
+            queue=self.queue,
+            no_ack=True
+        )
+        print("Waiting for Messages on '%s'" % self.queue)
+
+        try:
+            self.channel.start_consuming()
+        except KeyboardInterrupt:
+            self.channel.stop_consuming()
+
 
     def __del__(self):
         '''cleanup, what else?
@@ -49,7 +69,6 @@ class Messaging:
             self.connection.close()
         except AttributeError:
             sys.stderr.write("connection didn't exist, nothing to do")
-            
 
 
 
@@ -57,4 +76,5 @@ if __name__ == '__main__':
     THING = Messaging("hello")
     #grab the first arguement or send something generic
     THING.send_message(' '.join(sys.argv[1:]) or "Generic Message")
+    THING.receive_message('print')
     del THING
