@@ -28,6 +28,7 @@ class Messaging:
             sys.stderr.write('ERROR: %sn' % str(err))
             print("Could not connect")
 
+        #set up the internal variables
         self.queue = queue
         self.channel = self.connection.channel()
         self.channel.queue_declare(queue=queue)
@@ -45,7 +46,9 @@ class Messaging:
         '''blockIO and wait for recieption of messages on queue'''
         def print_message(channel, method, properties, body):
             '''default case'''
-            print("fetched '%s' from %s" % (body.decode('utf-8'), self.queue))
+            print("fetched '%s' from %s" % \
+                (body.decode('utf-8'), self.queue)
+                 )
         if callback == "print":
             callback = print_message
 
