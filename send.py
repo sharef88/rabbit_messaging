@@ -12,31 +12,36 @@ MESSAGE_HOST = pika.ConnectionParameters(
         "guest"
     )
 )
-
-
-def start_Connection(queue):
-    ''' This function will return a pika.BlockingConnection.channel object
+class Messaging:
+    ''' Class for setting up an AMQP Connection
     '''
+    def __init__(self, queue):
+        ''' This function will configure self.connection and self.channel for normal usage
+        '''
 
-    connection = pika.BlockingConnection(
-        MESSAGE_HOST
-    )
-    channel = connection.channel()
+        self.connection = pika.BlockingConnection(
+            MESSAGE_HOST
+        )
+        self.channel = self.connection.channel()
 
-    channel.queue_declare(queue=queue)
-    return connection, channel
+        self.channel.queue_declare(queue=queue)
 
-def send_message(conn, chan, message):
-    '''take the chan object, send message to it, and then close connection
-        first 2 arguements should ideally be passed from start_Connection()
-    '''
-    #sys.argv[0] is the program name itself, so we need to grab everything else and send it as a msg
-    #message = ' '.join(sys.argv[1:]) or "Hello World!"
-    chan.basic_publish(
-        exchange='',
-        routing_key='hello',
-        body=message
-    )
-    conn.close()
-    return
-send_message(*start_Connection("hello"), "greetings")
+    def send_message(self, message):
+        '''take the chan object, send message to it, and then close connection
+            first 2 arguements should ideally be passed from start_Connection()
+        '''
+        self.channel.basic_publish(
+            exchange='',
+            routing_key='hello',
+            body=message
+        )
+
+    def __del__(self):
+        self.connection.close()
+
+
+
+if __name__ == '__main__':
+    THING = Messaging("hello")
+    THING.send_message("objected!")
+    del THING
