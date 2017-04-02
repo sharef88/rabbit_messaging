@@ -1,4 +1,5 @@
 #!/usr/bin/python3.4
+'''Module for building a pika-amqp connection'''
 import sys
 import pika
 __author__ = "sharef88"
