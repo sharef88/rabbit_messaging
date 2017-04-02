@@ -43,6 +43,8 @@ class Messaging:
         )
 
     def __del__(self):
+        '''cleanup, what else?
+        '''
         try:
             self.connection.close()
         except AttributeError:
@@ -53,5 +55,6 @@ class Messaging:
 
 if __name__ == '__main__':
     THING = Messaging("hello")
-    THING.send_message("objected!")
+    #grab the first arguement or send something generic
+    THING.send_message(' '.join(sys.argv[1:]) or "Generic Message")
     del THING
