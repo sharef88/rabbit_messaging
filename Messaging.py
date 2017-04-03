@@ -6,7 +6,7 @@ import random
 import pika
 __author__ = "sharef88"
 
-class Messaging:
+class Messaging(object):
     ''' Class for setting up an AMQP Connection
     '''
     @staticmethod
