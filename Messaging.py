@@ -2,6 +2,7 @@
 '''Module for building a pika-amqp connection'''
 import sys
 import json
+import random
 import pika
 __author__ = "sharef88"
 
@@ -22,16 +23,10 @@ class Messaging:
     def __init__(self, queue):
         ''' This function will configure self.connection and self.channel for normal usage
         '''
-
-        #open the config file, deserialize it from json to w/else:
-        #with will auto- __exit__ its with'd object
-        try:
-            self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(**self._open_config())
-            )
-        except ConnectionError as err:
-            sys.stderr.write('ERROR: %sn' % str(err))
-            print("Could not connect")
+        #Create the connection using data from the config file
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(**self._open_config())
+        )
 
         #set up the internal variables
         self.queue = queue
@@ -63,16 +58,20 @@ class Messaging:
                 #decode is needed as amqp messages are bytestreams, not base strings
                   (body.decode('utf-8'), self.queue)
                  )
+
+        #set up the default case of "print" 
         if callback == "print":
             callback = print_message
 
+        #set the parameters of the consumption (what to do, where to feed)
         self.channel.basic_consume(
             consumer_callback=callback,
             queue=self.queue,
             no_ack=True
         )
-        print("Waiting for Messages on '%s'" % self.queue)
 
+        #start consuming the messages from the queue, end the consumption gracefully 'pon ctrl-c
+        print("Waiting for Messages on '%s'" % self.queue)
         try:
             self.channel.start_consuming()
         except KeyboardInterrupt:
@@ -90,7 +89,5 @@ class Messaging:
 
 if __name__ == '__main__':
     THING = Messaging("hello")
-    THING.send_message("dude")
+    THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
     #grab the first arguement or send something generic
-    #THING.receive_message('print')
-    #del THING
