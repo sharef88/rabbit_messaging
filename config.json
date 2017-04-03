@@ -3,7 +3,7 @@
     "port": 5672, 
     "virtual_host": "/", 
     "credentials": {
-        "user": "guest", 
+        "username": "guest", 
         "password": "guest"
     }
 }

@@ -5,26 +5,29 @@ import json
 import pika
 __author__ = "sharef88"
 
-MESSAGE_HOST = pika.ConnectionParameters(
-    host='192.168.1.155',
-    port=5672,
-    virtual_host='/',
-    connection_attempts=1,
-    credentials=pika.PlainCredentials(
-        "guest",
-        "guest"
-    )
-)
 class Messaging:
     ''' Class for setting up an AMQP Connection
     '''
+    @staticmethod
+    def _open_config():
+        ''' open the config.json file that is in the same directory and de-serialize its contents.
+        it will also check type-sanity
+        '''
+        with open("config.json", 'r') as fin:
+            config = json.load(fin)
+            config['port'] = int(config['port'])
+            config['credentials'] = pika.PlainCredentials(**config['credentials'])
+            return config
+
     def __init__(self, queue):
         ''' This function will configure self.connection and self.channel for normal usage
         '''
 
+        #open the config file, deserialize it from json to w/else:
+        #with will auto- __exit__ its with'd object
         try:
             self.connection = pika.BlockingConnection(
-                MESSAGE_HOST
+                pika.ConnectionParameters(**self._open_config())
             )
         except ConnectionError as err:
             sys.stderr.write('ERROR: %sn' % str(err))
@@ -52,10 +55,13 @@ class Messaging:
         )
     def receive_message(self, callback):
         '''blockIO and wait for recieption of messages on queue'''
-        def print_message(channel, method, properties, body):
-            '''default case'''
+        def print_message(body):
+            '''default case,
+            just kick out print of the message
+            '''
             print("fetched '%s' from %s" % \
-                (body.decode('utf-8'), self.queue)
+                #decode is needed as amqp messages are bytestreams, not base strings
+                  (body.decode('utf-8'), self.queue)
                  )
         if callback == "print":
             callback = print_message
@@ -84,21 +90,7 @@ class Messaging:
 
 if __name__ == '__main__':
     THING = Messaging("hello")
+    THING.send_message("dude")
     #grab the first arguement or send something generic
-    #THING.send_message(' '.join(sys.argv[1:]) or "Generic Message")
-
     #THING.receive_message('print')
-
     #del THING
-    config = {
-        'host':'192.168.1.155',
-        'port':5672,
-        'virtual_host':'/',
-        'credentials': {
-            'user':'guest',
-            'password':'guest'
-            }
-    }
-    config2 = json.load(open("config.json"))
-    print(json.dumps(config2))
-    THING.send_message(config2['host'])
