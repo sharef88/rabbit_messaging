@@ -45,7 +45,7 @@ class Messaging:
         #this is largely amqp/rabbit naming convention
         self.channel.basic_publish(
             exchange='',
-            routing_key='hello',
+            routing_key=self.queue,
             body=message
         )
     def receive_message(self, callback):
