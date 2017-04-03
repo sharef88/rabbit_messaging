@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python3
 '''Module for building a pika-amqp connection'''
 import sys
 import json
