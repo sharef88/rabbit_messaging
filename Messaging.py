@@ -50,7 +50,7 @@ class Messaging:
         )
     def receive_message(self, callback):
         '''blockIO and wait for recieption of messages on queue'''
-        def print_message(body):
+        def print_message(ch, method, properties, body):
             '''default case,
             just kick out print of the message
             '''
