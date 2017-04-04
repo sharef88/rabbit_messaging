@@ -31,7 +31,12 @@ class Messaging(object):
         #set up the internal variables
         self.queue = queue
         self.channel = self.connection.channel()
-        self.channel.queue_declare(queue=queue)
+        self.queue_object = self.channel.queue_declare(
+            queue=queue,
+            durable=True,
+            exclusive=False,
+            auto_delete=False
+            )
 
     def send_message(self, message):
         '''
