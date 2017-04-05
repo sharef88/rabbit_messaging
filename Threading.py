@@ -8,13 +8,12 @@ import json
 import time
 import Messaging
 
-def calc_sqr(channel, method, properties, body):
-    '''calculates the square of the json-index'''
-    x = int(json.loads(body.decode('utf-8'))['index'])
-    print([x,x*x])
-    time.sleep(1)
-
 def worker(conn):
+    def calc_sqr(channel, method, properties, body):
+        '''calculates the square of the json-index'''
+        x = int(json.loads(body.decode('utf-8'))['index'])
+        print([x,x*x])
+        time.sleep(1)
     conn.receive_message(calc_sqr, 0)
 
 if __name__ == "__main__":
