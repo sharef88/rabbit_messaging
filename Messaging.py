@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 '''Module for building a pika-amqp connection'''
 import sys
@@ -54,43 +53,74 @@ class Messaging(object):
             routing_key=self.queue,
             body=message
         )
-    def receive_message(self, callback):
-        '''blockIO and wait for recieption of messages on queue'''
-        def print_message(channel, method, properties, body):
+    def receive_message(self, callback, loop):
+        '''
+        Receive Messages:
+        Callback function is used 'pon the message, default case is "print"
+        #
+        loop the reception while:
+        -- loop == -1 -> loop infinitely
+        -- loop == 0 -> loop until queue is empty
+        -- loop == n -> loop until received n messages
+        '''
+        #seriously, pylint can shut up about the callback structure
+        def print_message(channel, method, header, body):
             '''default case,
             just kick out print of the message
             '''
-            print("fetched '%s' from %s" % \
-                #decode is needed as amqp messages are bytestreams, not base strings
-                  (body.decode('utf-8'), self.queue)
-                 )
+            #decode is needed as amqp messages are bytestreams, not base strings
+            print("fetched '%s' from %s" % (body.decode('utf-8'), self.queue))
 
         #set up the default case of "print"
         if callback == "print":
             callback = print_message
 
-        while 1:
-            method_frame, header_frame, body = self.channel.basic_get(self.queue)
-            print(method_frame)
-            if method_frame:
-                callback(self.channel, method_frame, header_frame, body)
-                self.channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+        count = [1, 0]
+        #loop the reception while:
+        # -- loop == -1 -> loop infinitely
+        # -- loop == 0 -> loop until queue is empty
+        # -- loop == n -> loop until received n messages
+        while \
+                loop == -1 \
+                or (loop == 0 and count[0]) \
+                or count[1] < loop:
+            method, header, body = self.channel.basic_get(self.queue)
+            if method:
+                #expose the remaining messages in queue
+                count[0] = method.message_count
+                #increment the total sent messages
+                count[1] += 1
+
+                #implement the callback function
+                callback(self.channel, method, header, body)
+
+                #send the all-clear that we got (and processed) the message
+                self.channel.basic_ack(delivery_tag=method.delivery_tag)
             else:
-                return False
+                #edge-case, reset count to 0, as we did receive nada
+                break
+        print(count, loop)
+        if count[1]:
+            return True
+        return False
+
 
 
     def __del__(self):
-        '''cleanup, what else?
+        '''
+        cleanup, what else?
         '''
         try:
             self.connection.close()
         except AttributeError:
-            sys.stderr.write("connection didn't exist, nothing to do")
+            print("connection didn't exist, nothing to do", file=sys.stderr)
 
 
 if __name__ == '__main__':
+    #set up a connection to the hello queue
     THING = Messaging("hello")
-    for n in range(1,10):
+    #send a pile o messages
+    for n in range(0, 10):
         THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
-    THING.receive_message('print')
-    #grab the first arguement or send something generic
+    #recieve messages and print the return code
+    print(THING.receive_message('print', 0))
