@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 '''Module for building a pika-amqp connection'''
 import sys
@@ -64,23 +65,18 @@ class Messaging(object):
                   (body.decode('utf-8'), self.queue)
                  )
 
-        #set up the default case of "print" 
+        #set up the default case of "print"
         if callback == "print":
             callback = print_message
 
-        #set the parameters of the consumption (what to do, where to feed)
-        self.channel.basic_consume(
-            consumer_callback=callback,
-            queue=self.queue,
-            no_ack=True
-        )
-
-        #start consuming the messages from the queue, end the consumption gracefully 'pon ctrl-c
-        print("Waiting for Messages on '%s'" % self.queue)
-        try:
-            self.channel.start_consuming()
-        except KeyboardInterrupt:
-            self.channel.stop_consuming()
+        while 1:
+            method_frame, header_frame, body = self.channel.basic_get(self.queue)
+            print(method_frame)
+            if method_frame:
+                callback(self.channel, method_frame, header_frame, body)
+                self.channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+            else:
+                return False
 
 
     def __del__(self):
@@ -94,6 +90,7 @@ class Messaging(object):
 
 if __name__ == '__main__':
     THING = Messaging("hello")
-    THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
-    
+    for n in range(1,10):
+        THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
+    THING.receive_message('print')
     #grab the first arguement or send something generic
