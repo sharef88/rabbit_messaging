@@ -3,35 +3,45 @@
 Teachin myself Threading
 '''
 from threading import Thread
+from multiprocessing.dummy import Pool as ThreadPool
 import json
+import time
 import Messaging
 
-INDEX=int()
+def calc_sqr(channel, method, properties, body):
+    '''calculates the square of the json-index'''
+    x = int(json.loads(body.decode('utf-8'))['index'])
+    print([x,x*x])
+    time.sleep(1)
 
-def decode(channel, method, properties, body):
-    global INDEX
-    out = json.loads(body.decode('utf-8'))
-    INDEX = out['index']
-    print(out['index'])
+def worker(conn):
+    conn.receive_message(calc_sqr, 0)
 
 if __name__ == "__main__":
-    #create the connection object
     CONN = Messaging.Messaging('hello1')
-
-    #set up a thread to decode received messages
-    T1 = Thread(target=CONN.receive_message, args=(decode,))
-
-    #THREAD IS GO GO GO
-    T1.start()
-
     #now that we got that outta the way, lets bounce some messages
-    for i in range(1000):
+    print("Filling the queue")
+    for i in range(100):
         CONN.send_message({'index': i, 'other stuff':'yup'})
-    #now we gotta wait for the bloody thing to finish receiving messages.
-    #I'm sure there's a graceful way of using Thread.join here
-    while INDEX < 999:
-        pass
-    print('done')
-    CONN.channel.stop_consuming()
     del CONN
-    
+    #now we gotta wait for the bloody thing to finish receiving messages.
+    #set up a thread to decode received messages
+    timing=list()
+    t1=time.time()
+
+    pool = ThreadPool(20)
+    CONNECTIONS = list()
+    print('Making tons of threads')
+    for i in range(20):
+        CONNECTIONS.append(Messaging.Messaging('hello1'))
+    timing.append(str(time.time()-t1))
+
+    t2=time.time()
+    pool.map(worker, CONNECTIONS)
+    pool.close()
+    pool.join()
+    timing.append(str(time.time()-t2))
+    timing.append(str(time.time()-t1))
+    print(timing)
+
+    print('done')

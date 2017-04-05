@@ -99,7 +99,6 @@ class Messaging(object):
             else:
                 #edge-case, reset count to 0, as we did receive nada
                 break
-        print(count, loop)
         if count[1]:
             return True
         return False
