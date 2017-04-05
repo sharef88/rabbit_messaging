@@ -31,6 +31,7 @@ if __name__ == "__main__":
     #I'm sure there's a graceful way of using Thread.join here
     while INDEX < 999:
         pass
+    print('done')
     CONN.channel.stop_consuming()
     del CONN
     
