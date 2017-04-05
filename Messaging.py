@@ -95,4 +95,5 @@ class Messaging(object):
 if __name__ == '__main__':
     THING = Messaging("hello")
     THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
+    
     #grab the first arguement or send something generic
