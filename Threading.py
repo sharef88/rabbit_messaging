@@ -36,7 +36,7 @@ if __name__ == "__main__":
     timing.append(str(time.time()-t1))
 
     t2=time.time()
-    pool.map(worker, CONNECTIONS)
+    pool.map_async(worker, CONNECTIONS)
     pool.close()
     pool.join()
     timing.append(str(time.time()-t2))
