@@ -82,7 +82,14 @@ class Messaging(object):
         # -- loop == -1 -> loop infinitely
         # -- loop == 0 -> loop until queue is empty
         # -- loop == n -> loop until received n messages
-        for method, header, body in self.channel.consume(self.queue):
+        if loop == 0:
+            timeout = 30 #if loop until empty then set a timeout to grab the "empty" state
+        else:
+            timeout = None
+        for method, header, body in self.channel.consume(
+                queue = self.queue,
+                inactivity_timeout = timeout,
+            ):
             #do the thing, you know, the thing!
             callback(self.channel, method, header, body)
             #yessir, I've done the thing
