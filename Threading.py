@@ -12,7 +12,7 @@ def worker(conn):
     def calc_sqr(channel, method, properties, body):
         '''calculates the square of the json-index'''
         x = int(json.loads(body.decode('utf-8'))['index'])
-        print([x,x*x])
+        print([x, x*x])
         time.sleep(1)
     conn.receive_message(calc_sqr, 0)
 
@@ -25,8 +25,8 @@ if __name__ == "__main__":
     del CONN
     #now we gotta wait for the bloody thing to finish receiving messages.
     #set up a thread to decode received messages
-    timing=list()
-    t1=time.time()
+    timing = list()
+    t1 = time.time()
 
     pool = ThreadPool(20)
     CONNECTIONS = list()
@@ -35,8 +35,9 @@ if __name__ == "__main__":
         CONNECTIONS.append(Messaging.Messaging('hello1'))
     timing.append(str(time.time()-t1))
 
-    t2=time.time()
+    t2 = time.time()
     pool.map_async(worker, CONNECTIONS)
+    timing.append(str(time.time()-t2))
     pool.close()
     pool.join()
     timing.append(str(time.time()-t2))
