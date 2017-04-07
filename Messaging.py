@@ -98,16 +98,18 @@ class Messaging(object):
             'sent': sent_messages,
             'requeued': requeued,
             }
-
-
     def __del__(self):
+        self.close()
+
+    def close(self):
         '''
         cleanup, what else?
         '''
         try:
             self.connection.close()
-        except AttributeError:
-            print("connection didn't exist, nothing to do", file=sys.stderr)
+        except (AttributeError, pika.exceptions.ConnectionClosed):
+            pass
+    
 
 def print_message(channel, method, header, body):
     '''
@@ -128,3 +130,4 @@ if __name__ == '__main__':
         THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
     #recieve messages and print the return code
     print(THING.receive_message(print_message, 0))
+    THING.close()

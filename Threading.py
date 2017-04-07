@@ -44,4 +44,6 @@ if __name__ == "__main__":
     timing.append(str(time.time()-t1))
     print(timing)
 
+    for i in enumerate(CONNECTIONS):
+        i[1].close()
     print('done')
