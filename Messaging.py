@@ -64,51 +64,36 @@ class Messaging(object):
         -- loop == 0 -> loop until queue is empty
         -- loop == n -> loop until received n messages
         '''
-        #seriously, pylint can shut up about the callback structure
-        def print_message(channel, method, header, body):
-            '''default case,
-            just kick out print of the message
-            '''
-            #decode is needed as amqp messages are bytestreams, not base strings
-            print("fetched '%s' from %s" % (body.decode('utf-8'), self.queue))
-            #print([channel.get_waiting_message_count(), method.delivery_tag])
-            print([self.queue_object.method.message_count, method.delivery_tag])
-
-        #set up the default case of "print"
-        if callback == "print":
-            callback = print_message
-
-        #loop the reception while:
-        # -- loop == -1 -> loop infinitely
-        # -- loop == 0 -> loop until queue is empty
-        # -- loop == n -> loop until received n messages
+        #convert a loop statement to timeout
         if loop == 0:
-            timeout = 30 #if loop until empty then set a timeout to grab the "empty" state
+            timeout = 2 #if loop until empty then set a timeout to grab the "empty" state
         else:
             timeout = None
-        for method, header, body in self.channel.consume(
-                queue = self.queue,
-                inactivity_timeout = timeout,
-            ):
-            #do the thing, you know, the thing!
-            callback(self.channel, method, header, body)
-            #yessir, I've done the thing
-            self.channel.basic_ack(delivery_tag=method.delivery_tag)
+        self.channel.basic_qos(prefetch_count=2)
+        sent_messages = 0
+        #Try: statement is for catching the Nonetype not iterable error that this would cause
+        try:
+            for method, header, body in self.channel.consume(
+                    queue=self.queue,
+                    inactivity_timeout=timeout,
+                ):
 
-            #kill the loop 'pon conditions stated above
-            #print([message_count,method.delivery_tag])
-                    #loop == 0 and not self.channel.get_waiting_message_count():
-            if loop == method.delivery_tag or \
-                    loop == 0 and self.waiting_messages == method.delivery_tag:
-                sent_messages = method.delivery_tag
-                requeued = self.channel.cancel()
-                break
+                callback(self.channel, method, header, body)  #do the thing, you know, the thing!
+                sent_messages = method.delivery_tag           #Make sure you record the thing-doing!
+                self.channel.basic_ack(delivery_tag=method.delivery_tag)
+                #yessir, I've done the thing
+
+                #kill the loop 'pon conditions stated above
+                if loop == method.delivery_tag:
+                    break
+        except TypeError:
+            pass
         #return a report of sent messages
+        requeued = self.channel.cancel()
         self.channel.close()
         return {
             'sent': sent_messages,
             'requeued': requeued,
-            'waiting': self.queue_object.method.message_count
             }
 
 
@@ -121,13 +106,22 @@ class Messaging(object):
         except AttributeError:
             print("connection didn't exist, nothing to do", file=sys.stderr)
 
+def print_message(channel, method, header, body):
+    '''
+    default case,
+    just kick out print of the message
+    '''
+    channel, header = channel, header
+    #decode is needed as amqp messages are bytestreams, not base strings
+    print("Message %s fetched '%s' from %s" %
+          (method.delivery_tag, body.decode('utf-8'), method.routing_key))
 
 if __name__ == '__main__':
     #set up a connection to the hello queue
     THING = Messaging("hello")
     #send a pile o messages
-    #for n in range(0, 1000):
-    #    THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
+    print('And now! we test! FOR SCIENCE')
+    for n in range(0, 1000):
+        THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
     #recieve messages and print the return code
-    out = THING.receive_message('print', 0)
-    print(out)
+    print(THING.receive_message(print_message, 0))
