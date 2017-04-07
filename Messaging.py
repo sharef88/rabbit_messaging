@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 '''Module for building a pika-amqp connection'''
 import sys
+import ssl
 import json
 import random
 import pika
@@ -18,6 +19,8 @@ class Messaging(object):
             config = json.load(fin)
             config['port'] = int(config['port'])
             config['credentials'] = pika.PlainCredentials(**config['credentials'])
+            config['ssl_options']['ssl_version'] = ssl.PROTOCOL_TLSv1_2
+            config['ssl_options']['cert_reqs'] = ssl.CERT_REQUIRED
             return config
 
     def __init__(self, queue):
