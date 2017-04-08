@@ -12,8 +12,7 @@ def worker(conn):
     def calc_sqr(channel, method, properties, body):
         '''calculates the square of the json-index'''
         x = int(json.loads(body.decode('utf-8'))['index'])
-        print([x, x*x])
-        time.sleep(1)
+        print([x, x ** 3])
     conn.receive_message(calc_sqr, 0)
 
 if __name__ == "__main__":
@@ -44,4 +43,6 @@ if __name__ == "__main__":
     timing.append(str(time.time()-t1))
     print(timing)
 
+    for i in enumerate(CONNECTIONS):
+        i[1].close()
     print('done')
