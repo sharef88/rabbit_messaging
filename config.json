@@ -1,16 +1,18 @@
 {
-    "host": "192.168.1.155", 
-    "port": 5671, 
-    "virtual_host": "/", 
-    "socket_timeout": 1,
-    "ssl": true,
-    "ssl_options": {
-        "ca_certs": ".ssl/cacert.pem",
-        "certfile": ".ssl/cert.pem",
-        "keyfile": ".ssl/key.pem"
-    },
-    "credentials": {
-        "username": "guest", 
-        "password": "guest"
+    "rabbit": {
+        "host": "192.168.1.155", 
+        "port": 5671, 
+        "virtual_host": "/", 
+        "socket_timeout": 1,
+        "ssl": true,
+        "ssl_options": {
+            "ca_certs": ".ssl/cacert.pem",
+            "certfile": ".ssl/cert.pem",
+            "keyfile": ".ssl/key.pem"
+        },
+        "credentials": {
+            "username": "guest", 
+            "password": "guest"
+        }
     }
 }

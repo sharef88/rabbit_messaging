@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 '''Module for building a pika-amqp connection'''
-import sys
 import ssl
 import json
 import random
@@ -11,16 +10,20 @@ class Messaging(object):
     ''' Class for setting up an AMQP Connection
     '''
     @staticmethod
-    def _open_config():
+    def _parse_ssl(config_input):
+        config_input['cert_reqs'] = ssl.CERT_REQUIRED
+        config_input['ssl_version'] = ssl.PROTOCOL_TLSv1_2
+        return config_input
+
+    def _open_config(self):
         ''' open the config.json file that is in the same directory and de-serialize its contents.
-        it will also check type-sanity
         '''
         with open("config.json", 'r') as fin:
-            config = json.load(fin)
-            config['port'] = int(config['port'])
+            config = json.load(fin)['rabbit']
+            #convert credentials into pika credentials
             config['credentials'] = pika.PlainCredentials(**config['credentials'])
-            config['ssl_options']['ssl_version'] = ssl.PROTOCOL_TLSv1_2
-            config['ssl_options']['cert_reqs'] = ssl.CERT_REQUIRED
+            #add some extras to the ssl options
+            config['ssl_options'] = self._parse_ssl(config['ssl_options'])
             return config
 
     def __init__(self, queue):
@@ -109,7 +112,6 @@ class Messaging(object):
             self.connection.close()
         except (AttributeError, pika.exceptions.ConnectionClosed):
             pass
-    
 
 def print_message(channel, method, header, body):
     '''
@@ -126,8 +128,14 @@ if __name__ == '__main__':
     THING = Messaging("hello")
     #send a pile o messages
     print('And now! we test! FOR SCIENCE')
-    for n in range(0, 1000):
+    msg_count = 100
+    for n in range(0, msg_count):
         THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
     #recieve messages and print the return code
-    print(THING.receive_message(print_message, 0))
+    results = THING.receive_message(print_message, 0)
+    if results['sent'] == msg_count:
+        out = "all the messages returned successfully"
+    else:
+        out = "%s messages were not sent" % (msg_count-results['sent'])
+    print(out)
     THING.close()
