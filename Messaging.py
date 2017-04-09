@@ -2,7 +2,6 @@
 '''Module for building a pika-amqp connection'''
 import ssl
 import json
-import random
 import pika
 __author__ = "sharef88"
 
@@ -26,7 +25,7 @@ class Messaging(object):
             config['ssl_options'] = self._parse_ssl(config['ssl_options'])
             return config
 
-    def __init__(self, exchange, routing):
+    def __init__(self, exchange, routing, exclusive=False):
         ''' This function will configure self.connection and self.channel for normal usage
         '''
         #Create the connection using data from the config file
@@ -41,7 +40,10 @@ class Messaging(object):
             exchange=exchange,
             exchange_type='topic'
             )
-        self.queue = self.channel.queue_declare(queue=self.routing)
+        if not exclusive:
+            self.queue = self.channel.queue_declare(queue=self.routing)
+        else:
+            self.queue = self.channel.queue_declare(exclusive=True)
 
         self.channel.queue_bind(
             exchange=exchange,
@@ -78,12 +80,12 @@ class Messaging(object):
         '''
         #convert a loop statement to timeout
         if loop == 0:
-            timeout = 2 #if loop until empty then set a timeout to grab the "empty" state
+            timeout = 5 #if loop until empty then set a timeout to grab the "empty" state
         else:
             timeout = None
         self.channel.basic_qos(prefetch_count=2)
-        sent_messages = 0
         #Try: statement is for catching the Nonetype not iterable error that this would cause
+        sent_messages = 0
         try:
             for method, header, body in self.channel.consume(
                     queue=self.queue.method.queue,
@@ -98,7 +100,8 @@ class Messaging(object):
                 #kill the loop 'pon conditions stated above
                 if loop == method.delivery_tag:
                     break
-        except TypeError:
+        except TypeError as err:
+            #raise err
             pass
         #return a report of sent messages
         requeued = self.channel.cancel()
@@ -118,30 +121,3 @@ class Messaging(object):
             self.connection.close()
         except (AttributeError, pika.exceptions.ConnectionClosed):
             pass
-
-def print_message(channel, method, header, body):
-    '''
-    default case,
-    just kick out print of the message
-    '''
-    channel, header = channel, header
-    #decode is needed as amqp messages are bytestreams, not base strings
-    print("Message %s fetched '%s' from %s" %
-          (method.delivery_tag, body.decode('utf-8'), method.routing_key))
-
-if __name__ == '__main__':
-    #set up a connection to the hello queue
-    THING = Messaging(exchange="hello", routing=('hello.dude',))
-    #send a pile o messages
-    print('And now! we test! FOR SCIENCE')
-    msg_count = 10000
-    for n in range(0, msg_count):
-        THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']), 'hello.dude')
-    #recieve messages and print the return code
-    results = THING.receive_message(print_message, 0)
-    if results['sent'] == msg_count:
-        out = "all the messages returned successfully"
-    else:
-        out = "%s messages were not sent" % (msg_count-results['sent'])
-    print(out)
-    THING.close()
