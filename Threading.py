@@ -16,28 +16,30 @@ def worker(conn):
     conn.receive_message(calc_sqr, 0)
 
 if __name__ == "__main__":
-    CONN = Messaging.Messaging('hello1')
-    #now that we got that outta the way, lets bounce some messages
-    print("Filling the queue")
-    for i in range(100):
-        CONN.send_message({'index': i, 'other stuff':'yup'})
-    del CONN
-    #now we gotta wait for the bloody thing to finish receiving messages.
+    CONN = Messaging.Messaging(exchange='hello', routing='hello.thread')
     #set up a thread to decode received messages
     timing = list()
     t1 = time.time()
 
-    pool = ThreadPool(20)
+    pool = ThreadPool(10)
     CONNECTIONS = list()
     print('Making tons of threads')
-    for i in range(20):
-        CONNECTIONS.append(Messaging.Messaging('hello1'))
+    for i in range(10):
+        CONNECTIONS.append(Messaging.Messaging(exchange='hello', routing='hello.thread'))
     timing.append(str(time.time()-t1))
 
     t2 = time.time()
     pool.map_async(worker, CONNECTIONS)
     timing.append(str(time.time()-t2))
     pool.close()
+
+    #now that we got that outta the way, lets bounce some messages
+    print("Filling the queue")
+    for i in range(10000):
+        CONN.send_message({'index': i, 'other stuff':'yup'}, 'hello.thread')
+    del CONN
+    #now we gotta wait for the bloody thing to finish receiving messages.
+    
     pool.join()
     timing.append(str(time.time()-t2))
     timing.append(str(time.time()-t1))

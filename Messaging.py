@@ -26,7 +26,7 @@ class Messaging(object):
             config['ssl_options'] = self._parse_ssl(config['ssl_options'])
             return config
 
-    def __init__(self, queue):
+    def __init__(self, exchange, routing):
         ''' This function will configure self.connection and self.channel for normal usage
         '''
         #Create the connection using data from the config file
@@ -34,17 +34,24 @@ class Messaging(object):
             pika.ConnectionParameters(**self._open_config()))
 
         #set up the internal variables
-        self.queue = queue
+        self.routing = routing
         self.channel = self.connection.channel()
-        self.queue_object = self.channel.queue_declare(
-            queue=queue,
-            durable=True,
-            exclusive=False,
-            auto_delete=False
+        self.exchange_name = exchange
+        self.exchange = self.channel.exchange_declare(
+            exchange=exchange,
+            exchange_type='topic'
             )
-        self.waiting_messages = self.queue_object.method.message_count
+        self.queue = self.channel.queue_declare(queue=self.routing)
 
-    def send_message(self, message):
+        self.channel.queue_bind(
+            exchange=exchange,
+            queue=self.queue.method.queue,
+            routing_key=routing
+            )
+
+
+
+    def send_message(self, message, key):
         '''
         Send message to self.channel,
         will always json-serialize the message to best facilitate reception of the message
@@ -55,11 +62,10 @@ class Messaging(object):
         #publish the message to the queue "routing key" via "exchange"
         #this is largely amqp/rabbit naming convention
         self.channel.basic_publish(
-            exchange='',
-            routing_key=self.queue,
+            exchange=self.exchange_name,
+            routing_key=key,
             body=message
         )
-        self.waiting_messages = self.queue_object.method.message_count
     def receive_message(self, callback, loop):
         '''
         Receive Messages:
@@ -80,7 +86,7 @@ class Messaging(object):
         #Try: statement is for catching the Nonetype not iterable error that this would cause
         try:
             for method, header, body in self.channel.consume(
-                    queue=self.queue,
+                    queue=self.queue.method.queue,
                     inactivity_timeout=timeout,
                 ):
 
@@ -125,12 +131,12 @@ def print_message(channel, method, header, body):
 
 if __name__ == '__main__':
     #set up a connection to the hello queue
-    THING = Messaging("hello")
+    THING = Messaging(exchange="hello", routing=('hello.dude',))
     #send a pile o messages
     print('And now! we test! FOR SCIENCE')
-    msg_count = 100
+    msg_count = 10000
     for n in range(0, msg_count):
-        THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']))
+        THING.send_message(random.choice(['dude', 'sweet', 'whoa', 'awesome']), 'hello.dude')
     #recieve messages and print the return code
     results = THING.receive_message(print_message, 0)
     if results['sent'] == msg_count:
