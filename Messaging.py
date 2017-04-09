@@ -71,8 +71,9 @@ class Messaging(object):
     def receive_message(self, callback, loop):
         '''
         Receive Messages:
-        Callback function is used 'pon the message, default case is "print"
-        #
+        Wrapper around the callback function.
+            Turns the callback into a generator over the queue itself.
+
         loop the reception while:
         -- loop == -1 -> loop infinitely
         -- loop == 0 -> loop until queue is empty
@@ -92,15 +93,15 @@ class Messaging(object):
                     inactivity_timeout=timeout,
                 ):
 
-                callback(self.channel, method, header, body)  #do the thing, you know, the thing!
                 sent_messages = method.delivery_tag           #Make sure you record the thing-doing!
                 self.channel.basic_ack(delivery_tag=method.delivery_tag)
-                #yessir, I've done the thing
+                #do the thing, you know, the thing!
+                yield callback(self.channel, method, header, body)
 
                 #kill the loop 'pon conditions stated above
                 if loop == method.delivery_tag:
                     break
-        except TypeError as err:
+        except TypeError:
             #raise err
             pass
         #return a report of sent messages
