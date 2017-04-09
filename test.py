@@ -13,6 +13,7 @@ def print_message(channel, method, header, body):
     #decode is needed as amqp messages are bytestreams, not base strings
     print("Message %s fetched '%s'    \tfrom %s" %
           (method.delivery_tag, body.decode('utf-8'), method.routing_key))
+    return body.decode('utf-8')
 
 def test(key):
     '''
@@ -26,7 +27,7 @@ def test(key):
 
     #send a pile o messages
     print('And now! we test! FOR SCIENCE')
-    msg_count = 10000
+    msg_count = 10
     for _ in range(0, msg_count):
         conn.send_message(
             message=random.choice(['dude', 'sweet', 'whoa', 'awesome']),
@@ -37,6 +38,7 @@ def test(key):
         callback=print_message,
         loop=0)
     #elaborate on the output
+    print(results)
     if results['sent'] == msg_count:
         out = "all the messages returned successfully"
     else:
