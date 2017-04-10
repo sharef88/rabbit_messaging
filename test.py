@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 '''thisis a docstring for the testing module, go away'''
+import sys
 import random
 import json
 from collections import Counter
@@ -29,7 +30,7 @@ def test(key):
 
     #send a pile o messages
     print('And now! we test! FOR SCIENCE')
-    msg_count = 1000
+    msg_count = int(sys.argv[1])
     for i in range(0, msg_count):
         message = {
             'index':i,
