@@ -95,12 +95,14 @@ class Messaging(object):
 
                 sent_messages = method.delivery_tag           #Make sure you record the thing-doing!
                 self.channel.basic_ack(delivery_tag=method.delivery_tag)
-                #do the thing, you know, the thing!
-                yield callback(self.channel, method, header, body)
-
+                
                 #kill the loop 'pon conditions stated above
                 if loop == method.delivery_tag:
                     break
+                    
+                #do the thing, you know, the thing!
+                yield callback(self.channel, method, header, body)
+                
         except TypeError:
             #raise err
             pass
